@@ -116,6 +116,7 @@ body.layout-top {
     font-family: var(--font-serif);
     color: var(--accent-color);
     margin-bottom: 15px;
+    text-align: center;
 }
 
 .story-content {

@@ -174,7 +174,7 @@ if (restartBtn) restartBtn.addEventListener('click', () => {
 if (giveUpBtn) giveUpBtn.addEventListener('click', () => {
     if (confirm('确定要查看真相吗？游戏将结束。')) {
         const truth = window.gameLogic.currentStory.truth;
-        appendMessage('system', `【真相揭之后】\n${truth}`);
+        appendMessage('system', `【真相揭秘】\n${truth}`);
         document.body.classList.add('solved');
         window.gameLogic.isSolved = true;
     }
