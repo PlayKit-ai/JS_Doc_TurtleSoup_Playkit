@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海龟汤 AI 探案馆</title>
+    <script src="https://unpkg.com/playkit-sdk@latest/dist/playkit-sdk.umd.js"></script>
+    <link rel="stylesheet" href="style.css?v=5">
+    <link rel="stylesheet" href="css/menu.css?v=3">
+    <link rel="stylesheet" href="css/generation.css?v=3">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Roboto:wght@300;400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <header id="main-header" class="game-header">
+            <h1>海龟汤 AI 探案馆</h1>
+            <p class="subtitle">揭开真相的迷雾</p>
+        </header>
+
+        <main class="game-board">
+            <!-- Home Panel (Main Menu) -->
+            <div id="home-panel" class="panel">
+                <div class="menu-actions">
+                    <button id="nav-classic" class="menu-big-btn">
+                        <span class="icon">📜</span>
+                        <span class="text">经典剧本</span>
+                        <span class="sub">精选海龟汤合集</span>
+                    </button>
+                    <button id="nav-custom" class="menu-big-btn">
+                        <span class="icon">🎲</span>
+                        <span class="text">自定义剧本</span>
+                        <span class="sub">AI 自由生成题目</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Generation Panel -->
+            <div id="custom-panel" class="panel hidden">
+                <div class="panel-header">
+                    <button class="back-btn" id="back-from-custom">← 返回首页</button>
+                    <h2>自定义剧本</h2>
+                </div>
+
+                <div class="generation-controls">
+                    <div class="control-group">
+                        <label>故事类型</label>
+                        <div class="filter-row" id="genre-options">
+                            <button class="filter-btn active" data-value="全部" data-tooltip="随机选择任何类型">全部</button>
+                            <button class="filter-btn" data-value="本格" data-tooltip="完全符合现实逻辑，不含超自然元素">本格</button>
+                            <button class="filter-btn" data-value="变格" data-tooltip="可能包含鬼怪、超能力等超自然元素">变格</button>
+                            <button class="filter-btn" data-value="新本格"
+                                data-tooltip="看似超自然但实际符合现实逻辑，或含梦境/精神元素">新本格</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>恐怖程度 (汤底类型)</label>
+                        <div class="filter-row" id="soup-options">
+                            <button class="filter-btn active" data-value="全部" data-tooltip="随机选择任何汤底">全部</button>
+                            <button class="filter-btn" data-value="清汤" data-tooltip="逻辑严密，无恐怖/血腥元素">清汤</button>
+                            <button class="filter-btn" data-value="红汤" data-tooltip="包含血腥、暴力或惊悚恐怖元素">红汤</button>
+                            <button class="filter-btn" data-value="黑汤" data-tooltip="包含伦理崩坏、人性黑暗或致郁元素">黑汤</button>
+                            <button class="filter-btn" data-value="王八汤" data-tooltip="逻辑离谱、搞笑或无厘头">王八汤</button>
+                        </div>
+                    </div>
+                    <button id="generate-btn" class="generate-btn">开始生成题目</button>
+                    <div id="gen-loading" class="hidden">正在生成悬疑故事...</div>
+                </div>
+            </div>
+
+            <!-- Classic Story List Panel -->
+            <div id="classic-panel" class="panel hidden">
+                <div class="panel-header">
+                    <button class="back-btn" id="back-from-classic">← 返回首页</button>
+                    <h2>经典剧本</h2>
+                </div>
+                <div id="story-list" class="story-grid">
+                    <!-- Stories will be injected here -->
+                </div>
+            </div>
+
+            <!-- Game Play Area -->
+            <div id="game-panel" class="panel hidden">
+                <div class="story-card">
+                    <h2 id="story-title">案件标题</h2>
+                    <div class="story-content">
+                        <p id="story-puzzle">汤面（谜题）...</p>
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div id="chat-history" class="chat-history">
+                        <div class="message system">
+                            <p>我是你的AI主持人。请提问，我只能回答“是”、“不是”、“是也不是”或“与此无关”。</p>
+                        </div>
+                    </div>
+
+                    <div class="input-area">
+                        <input type="text" id="user-input" placeholder="输入你的问题..." autocomplete="off">
+                        <button id="send-btn">提问</button>
+                    </div>
+                    <div id="status-indicator" class="status hidden">正在思考...</div>
+                </div>
+
+                <div class="controls">
+                    <button id="give-up-btn" class="secondary-btn">查看真相</button>
+                    <button id="restart-btn" class="secondary-btn">返回首页</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/stories.js"></script>
+    <script src="js/ai_client.js"></script>
+    <script src="js/game_logic.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
