@@ -98,7 +98,8 @@ function initStoryList() {
     window.STORIES.forEach(story => {
         const btn = document.createElement('div');
         btn.className = 'story-btn';
-        btn.innerHTML = `<h3>${story.title}</h3><p>${story.puzzle.substring(0, 50)}...</p>`;
+        const puzzleText = story.puzzle.length > 50 ? story.puzzle.substring(0, 50) + '...' : story.puzzle;
+        btn.innerHTML = `<h3>${story.title}</h3><p>${puzzleText}</p>`;
         btn.onclick = () => startGame(story);
         storyList.appendChild(btn);
     });
