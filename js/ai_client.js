@@ -108,6 +108,36 @@ class AIClient {
         }
     }
 
+    async judgeProgress(question, milestones) {
+        if (!this.chatClient || !milestones || milestones.length === 0) return [];
+
+        const prompt = `
+        你需要判断玩家的提问是否“触及”了以下关键剧情点（Milestones）。
+        
+        【关键剧情点】
+        ${JSON.stringify(milestones)}
+
+        【玩家提问】
+        "${question}"
+
+        【判断规则】
+        1. 如果玩家的问题核心意思与某个剧情点相符（哪怕只是部分猜中），就认为触及了该点。
+        2. 请返回一个 JSON 数组，包含所有触及的 milestones id。如果没有触及，返回空数组 []。
+        3. 只返回 JSON 数组，不要任何多余文字。
+        4. 示例返回：["m1", "m3"]
+        `;
+
+        try {
+            const response = await this.chatClient.chat(prompt);
+            const jsonStr = response.replace(/```json/g, '').replace(/```/g, '').trim();
+            const result = JSON.parse(jsonStr);
+            return Array.isArray(result) ? result : [];
+        } catch (error) {
+            console.error("Progress judgment failed:", error);
+            return [];
+        }
+    }
+
     async generateStory(genre, soupType) {
         if (!this.isReady) {
             await this.init();
@@ -151,7 +181,18 @@ class AIClient {
             "title": "简短有吸引力的标题",
             "puzzle": "汤面（这是给玩家看的谜题。要求：设置强烈的悬念或矛盾，让人忍不住想问为什么。不要把真相写进去！）",
             "truth": "汤底（这是完整的真相。包含：起因、经过、核心诡计、结果。逻辑必须闭环，解释汤面中的所有疑点。）",
-            "hint": "给主持人的关键词提示（3-5个关键线索）"
+            "hint": "给主持人的关键词提示（3-5个关键线索）",
+            "solutionSpec": {
+                "milestones": [
+                    { "id": "m1", "text": "关键事实1" },
+                    { "id": "m2", "text": "关键事实2" },
+                    { "id": "m3", "text": "关键事实3 (共3-5个)" }
+                ],
+                "hints": [
+                     { "id": "h1", "unlockAfter": 1, "text": "💡 提示1：..." },
+                     { "id": "h2", "unlockAfter": 2, "text": "💡 提示2：..." }
+                ]
+            }
         }
         `;
 

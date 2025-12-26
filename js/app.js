@@ -119,6 +119,23 @@ function startGame(story) {
 
     // Logic Update
     window.gameLogic.start(story);
+
+    // Clear Hints Panel
+    const hintPanel = document.getElementById('hint-panel');
+    const hintList = document.getElementById('hint-list');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+
+    if (hintPanel) hintPanel.classList.add('hidden');
+    if (hintList) hintList.innerHTML = '';
+    if (progressFill) {
+        progressFill.style.width = '0%';
+        progressFill.classList.remove('full');
+    }
+    if (progressText) {
+        progressText.textContent = '0%';
+        progressText.style.color = '';
+    }
 }
 
 function appendMessage(role, text) {
@@ -146,6 +163,10 @@ async function handleUserSubmit() {
     // AI Request
     const response = await window.aiClient.ask(text);
 
+    // Update Progress (Async)
+    await window.gameLogic.updateProgress(text, response);
+    renderHints();
+
     // Update UI
     statusIndicator.classList.add('hidden');
     userInput.disabled = false;
@@ -156,7 +177,85 @@ async function handleUserSubmit() {
     if (window.gameLogic.checkWinCondition(response)) {
         document.body.classList.add('solved');
         appendMessage('system', '🎉 游戏胜利！你已经还原了真相。');
+        renderHints(); // Re-render to show 100% progress
     }
+}
+
+function renderHints() {
+    const hintPanel = document.getElementById('hint-panel');
+    const hintList = document.getElementById('hint-list');
+
+    if (!hintPanel || !hintList) return;
+
+    const spec = window.gameLogic.currentStory && window.gameLogic.currentStory.solutionSpec;
+    const progress = window.gameLogic.progress;
+
+    if (!spec) {
+        hintPanel.classList.add('hidden');
+        return;
+    }
+
+    // Show panel if we have hints OR progress
+    // Even if no hints yet, showing "Progress: 1/4" is feedback.
+
+    // Calculate progress
+    const totalMilestones = spec.milestones.length;
+    const foundCount = progress.foundMilestones.size;
+
+    // Logic: Milestones contribute to max 99%. Only solving gives 100%.
+    const isSolved = window.gameLogic.isSolved;
+    let percent = 0;
+
+    if (isSolved) {
+        percent = 100;
+    } else {
+        // Cap at 99% based on milestones
+        const rawPercent = (foundCount / totalMilestones) * 99;
+        percent = Math.min(99, Math.round(rawPercent));
+    }
+
+    hintPanel.classList.remove('hidden');
+
+    // Update Progress Bar UI
+    const progressText = document.getElementById('progress-text');
+    const progressFill = document.getElementById('progress-fill');
+
+    if (progressText && progressFill) {
+        progressText.textContent = `${percent}%`;
+        progressFill.style.width = `${percent}%`;
+
+        if (percent === 100) {
+            progressFill.classList.add('full');
+            progressText.textContent = "100% (推理成功)";
+            progressText.style.color = 'var(--success-color)';
+        } else {
+            progressFill.classList.remove('full');
+            progressText.style.color = 'var(--text-secondary)';
+        }
+    }
+
+    hintList.innerHTML = '';
+
+    if (progress.unlockedHints.size === 0) {
+        const placeholder = document.createElement('li');
+        placeholder.style.color = 'var(--text-secondary)';
+        placeholder.style.fontStyle = 'italic';
+        placeholder.textContent = '暂无解锁线索，请继续提问...';
+        hintList.appendChild(placeholder);
+    } else {
+        spec.hints.forEach(h => {
+            if (progress.unlockedHints.has(h.id)) {
+                // ... (existing hint rendering)
+                const li = document.createElement('li');
+                li.className = 'hint-item';
+                li.textContent = h.text;
+                hintList.appendChild(li);
+            }
+        });
+    }
+
+    // Scroll to bottom of chat history to keep focus? 
+    // Maybe checking hints doesn't need to scroll.
 }
 
 // Event Listeners
