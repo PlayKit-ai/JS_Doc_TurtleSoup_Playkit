@@ -4,8 +4,8 @@ class AIClient {
     constructor() {
         this.sdk = null;
         this.npc = null;
-        this.gameId = 'c89b33fa-0669-451f-bfb1-0fc979844e81'; // Provided by user
-        this.developerToken = 'dev-fba687f1-337a-49cd-ad85-75eb5f436013'; // Provided by user
+        this.gameId = '1251d171-b5b5-4811-8f37-bddcf9f5cc2f'; // Provided by user
+        this.developerToken = 'dev-563dd935-e55a-496f-95a9-3900ac43b16f'; // Provided by user
         this.isReady = false;
         this.currentStory = null;
     }
