@@ -64,6 +64,30 @@ body.layout-top {
     text-transform: uppercase;
 }
 
+#game-panel {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.game-play-area {
+    width: 100%;
+    max-width: 800px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    transition: background-image 1s ease-in-out;
+    background-color: var(--card-bg);
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    /* Align children tightly */
+}
+
 .panel {
     animation: fadeIn 0.5s ease-in-out;
 }
@@ -105,11 +129,16 @@ body.layout-top {
 
 /* Game Panel */
 .story-card {
-    background-color: var(--card-bg);
+    background-color: rgba(30, 30, 30, 0.7);
+    /* Increased transparency */
+    backdrop-filter: blur(8px);
+    /* Glassmorphism */
     padding: 25px;
-    border-radius: 12px;
-    margin-bottom: 20px;
-    border: 1px solid #333;
+    border-radius: 0;
+    /* Flat edges to fit area */
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
 }
 
 .story-card h2 {
@@ -125,13 +154,15 @@ body.layout-top {
 }
 
 .chat-container {
-    background-color: var(--card-bg);
-    border-radius: 12px;
+    background-color: rgba(30, 30, 30, 0.4);
+    /* Very transparent for history */
+    backdrop-filter: blur(4px);
     display: flex;
     flex-direction: column;
     height: 500px;
-    border: 1px solid #333;
+    border: none;
     overflow: hidden;
+    width: 100%;
 }
 
 .chat-history {
@@ -235,7 +266,10 @@ button:hover {
 .controls {
     display: flex;
     justify-content: space-between;
-    margin-top: 10px;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 800px;
+    gap: 20px;
 }
 
 @keyframes fadeIn {

@@ -117,6 +117,28 @@ function startGame(story) {
         </div>
     `;
 
+    // Trigger Background Generation
+    const gamePlayArea = document.getElementById('game-play-area');
+    if (!gamePlayArea) {
+        console.error("Game play area not found!");
+        return;
+    }
+    // Set a temporary loading state or keep previous until loaded
+    gamePlayArea.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6))';
+
+    // Async load image
+    window.aiClient.generateSceneImage(story).then(imageUrl => {
+        if (imageUrl) {
+            // Apply with overlay to ensure text readability
+            gamePlayArea.style.backgroundImage = `
+                linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
+                url('${imageUrl}')
+            `;
+            gamePlayArea.style.backgroundSize = 'cover';
+            gamePlayArea.style.backgroundPosition = 'center';
+        }
+    });
+
     // Logic Update
     window.gameLogic.start(story);
 

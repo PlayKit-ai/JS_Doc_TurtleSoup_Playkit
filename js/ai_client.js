@@ -21,13 +21,10 @@ class AIClient {
             // Initialize SDK
             const config = {
                 gameId: this.gameId,
-                baseURL: 'https://lab-staging.playkit.ai' // Try root domain
+                developerToken: this.developerToken,
+                baseURL: 'https://playkit.ai', // Corrected baseURL found in SDK source
+                debug: true // Enable debug mode for better diagnostics
             };
-
-            // If we had a token, we would add it here
-            if (this.developerToken) {
-                config.developerToken = this.developerToken;
-            }
 
             this.sdk = new PlayKitSDK.PlayKitSDK(config);
             await this.sdk.initialize();
@@ -37,8 +34,6 @@ class AIClient {
             return true;
         } catch (error) {
             console.error('Failed to initialize PlayKit SDK:', error);
-            // If initialization fails (e.g. auth required), we might need to handle it.
-            // But SDK might handle auth UI.
             return false;
         }
     }
@@ -81,10 +76,7 @@ class AIClient {
         `;
 
         try {
-            // Logic Change: Use ChatClient instead of NPCClient
-            // The user report suggests "NPC" usage might be causing issues (404).
-            // Vibe Coding docs use createChatClient.
-            this.chatClient = this.sdk.createChatClient('claude-3-7-sonnet');
+            this.chatClient = this.sdk.createChatClient('gemini-2.5-flash');
             return true;
         } catch (error) {
             console.error('Failed to create host:', error);
@@ -198,7 +190,7 @@ class AIClient {
 
         try {
             // Temporary ChatClient for generation
-            const genClient = this.sdk.createChatClient('deepseek-chat');
+            const genClient = this.sdk.createChatClient('claude-opus-4.5');
             const response = await genClient.chat(prompt);
 
             // Clean response in case of markdown blocks
@@ -210,6 +202,46 @@ class AIClient {
             return null;
         }
     }
+
+    async generateSceneImage(story) {
+        if (!this.isReady) {
+            await this.init();
+        }
+
+        // 强化提示词工程，确保生成的图片更具恐怖感、清晰度和代入感
+        const prompt = `
+        Create a cinematic, high-definition, and extremely atmospheric background image for a "Sea Turtle Soup" mystery game.
+        
+        【Visual Style】: Horror aesthetic, eerie and unsettling atmosphere, photorealistic masterpiece, 8k resolution, ultra-detailed textures, sharp focus, dramatic chiaroscuro lighting, deep menacing shadows, macabre details, uncanny valley vibes.
+        
+        【Scene Description】: Based on this story: "${story.puzzle}". 
+        Focus on a symbolic or environment-based representation that evokes a sense of dread.
+        - If it mentions a restaurant, show a dimly lit, abandoned table with flickering lights and a cold, lonely atmosphere.
+        - If it mentions a cliff or ocean, show a majestic but terrifyingly tumultuous sea under a blood-red moon or stormy sky.
+        - If it's a "Black Soup" (Human nature/Dark), use cold, desaturated, and morbid tones with subtle hints of psychological horror.
+        - If it's a "Red Soup" (Horror), use intense red accents, realistic blood-like textures, and ominous, shifting shadows.
+        
+        【CRITICAL CONSTRAINTS】:
+        - NO TEXT, NO TITLES, NO WORDS, NO LETTERS, NO NUMBERS.
+        - The image should be suitable as a high-quality full-screen application background.
+        - Horizontal composition, cinematic 16:9 aspect ratio.
+        - High clarity, zero blur in focal points.
+        `;
+
+        try {
+            // Use createImageClient
+            const imageClient = this.sdk.createImageClient('flux-1-schnell');
+            // Request a high-quality generation
+            const image = await imageClient.generate(prompt, '1024x1024');
+
+            // 返回 Data URL 用于背景图
+            return image.toDataURL();
+        } catch (error) {
+            console.error("Image generation failed:", error);
+            return null;
+        }
+    }
+
 }
 
 // Export
