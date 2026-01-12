@@ -85,7 +85,7 @@ class AIClient {
         `;
 
         try {
-            this.chatClient = this.sdk.createChatClient('gpt-4o-mini');
+            this.chatClient = this.sdk.createChatClient('gemini-2.5-flash');
             return true;
         } catch (error) {
             console.error('Failed to create host:', error);
@@ -122,7 +122,7 @@ class AIClient {
         if (!this.isReady) await this.init();
         const prompt = `创作一个海龟汤故事。类型: ${genre}, 恐怖度: ${soupType}. 返回指定格式JSON.`;
         try {
-            const genClient = this.sdk.createChatClient('gpt-4o-mini');
+            const genClient = this.sdk.createChatClient('claude-opus-4.5');
             const response = await genClient.chat(prompt);
             let jsonStr = response.replace(/```json/g, '').replace(/```/g, '').trim();
             return JSON.parse(jsonStr);
