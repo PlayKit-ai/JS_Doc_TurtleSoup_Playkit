@@ -44,13 +44,40 @@ body.layout-top {
 .game-header {
     text-align: center;
     margin-bottom: 30px;
+    width: 100%;
+}
+
+.header-top {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 30px;
+    position: relative;
+    flex-wrap: wrap;
+}
+
+.balance-container {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.recharge-btn {
+    padding: 4px 12px !important;
+    font-size: 0.8rem !important;
+    background-color: var(--accent-color);
+    color: #000;
 }
 
 .game-header h1 {
     font-family: var(--font-serif);
     color: var(--accent-color);
     font-size: 3.5rem;
-    /* Increased size */
     margin-bottom: 10px;
     letter-spacing: 2px;
 }
@@ -58,9 +85,7 @@ body.layout-top {
 .subtitle {
     color: var(--text-secondary);
     font-size: 1.2rem;
-    /* Increased size */
     letter-spacing: 4px;
-    /* More spacing */
     text-transform: uppercase;
 }
 

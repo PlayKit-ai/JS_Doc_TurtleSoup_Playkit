@@ -5,7 +5,6 @@ class AIClient {
         this.sdk = null;
         this.npc = null;
         this.gameId = '1251d171-b5b5-4811-8f37-bddcf9f5cc2f'; // Provided by user
-        this.developerToken = 'dev-563dd935-e55a-496f-95a9-3900ac43b16f'; // Provided by user
         this.isReady = false;
         this.currentStory = null;
     }
@@ -17,13 +16,11 @@ class AIClient {
         }
 
         try {
-            console.log('Initializing PlayKit SDK...');
-            // Initialize SDK
+            console.log('Initializing PlayKit SDK (Player-Paid Mode)...');
             const config = {
                 gameId: this.gameId,
-                developerToken: this.developerToken,
-                baseURL: 'https://playkit.ai', // Corrected baseURL found in SDK source
-                debug: true // Enable debug mode for better diagnostics
+                baseURL: 'https://playkit.ai',
+                debug: false
             };
 
             this.sdk = new PlayKitSDK.PlayKitSDK(config);
@@ -38,9 +35,32 @@ class AIClient {
         }
     }
 
+    async getPlayerInfo() {
+        if (!this.isReady) return { credits: 0 };
+        try {
+            return await this.sdk.getPlayerInfo();
+        } catch (error) {
+            console.error("Failed to get player info:", error);
+            return { credits: 0 };
+        }
+    }
+
+    openRechargePage() {
+        const rechargeURL = 'https://playkit.agentlandlab.com/recharge';
+        window.open(rechargeURL, 'recharge', 'width=600,height=800');
+    }
+
+    async handleCreditError(error) {
+        if (error && (error.code === 'INSUFFICIENT_CREDITS' || (error.message && error.message.includes('credits')))) {
+            alert('您的积分不足，请充值后继续游戏。');
+            this.openRechargePage();
+            return true;
+        }
+        return false;
+    }
+
     async createHost(story) {
         if (!this.isReady) {
-            console.warn('SDK not ready, attempting re-init...');
             const success = await this.init();
             if (!success) return false;
         }
@@ -52,31 +72,20 @@ class AIClient {
         
         【核心原则】
         1. **绝对一致性**：你的回答必须100%基于下方的【故事真相】。
-        2. **逻辑判定优先级**（请严格按顺序执行）：
-           - **第一步：判断是否矛盾**。如果玩家猜测与真相事实相反，直接回复“不是”。
-           - **第二步：判断是否有关（Crucial Step）**。即使玩家提问是**事实正确**的（例如“他是男的吗？”或者“发生在白天吗？”），但如果这个细节对于推导出核心诡计（真相的逻辑链）**毫无帮助**，属于无关紧要的背景或常识，**必须**回复“与此无关”。不能回复“是”。
-           - **第三步：判断确认为真**。只有当问题**同时满足**“事实正确” AND “对解谜有帮助（涉及核心线索/因果/动机/手法）”时，才回复“是”。
-           - **例外**：如果问题部分正确部分错误，回复“是也不是”。
+        2. **逻辑判定优先级**：
+           - **第一步：判断是否矛盾**。
+           - **第二步：判断是否有关**。
+           - **第三步：判断确认为真**。
+           - **例外**：如果部分正确，回复“是也不是”。
 
-        【当前谜题（汤面）】
-        "${story.puzzle}"
+        【谜面】: "${story.puzzle}"
+        【真相】: "${story.truth}"
         
-        【故事真相（汤底）- 绝对保密】
-        "${story.truth}"
-        
-        【回复词库】
-        你只能使用以下词列出的词语，不要有多余的解释：
-        - “是”
-        - “不是”
-        - “是也不是”
-        - “与此无关”
-        
-        【获胜判定】
-        只有当玩家**完整复述**了真相的核心逻辑（动因+手法+结果）时，你才可以说：“恭喜你！确实是这样……（简要复述真相）”。
+        【回复词库】: “是”、“不是”、“是也不是”、“与此无关”。不要有解释。
         `;
 
         try {
-            this.chatClient = this.sdk.createChatClient('gemini-2.5-flash');
+            this.chatClient = this.sdk.createChatClient('gpt-4o-mini');
             return true;
         } catch (error) {
             console.error('Failed to create host:', error);
@@ -85,16 +94,11 @@ class AIClient {
     }
 
     async ask(question) {
-        if (!this.chatClient) {
-            return "AI主持人尚未就绪。";
-        }
-
+        if (!this.chatClient) return "AI主持人尚未就绪。";
         try {
-            // Pass system prompt as context or second argument depending on API
-            // Based on docs: chat.chat(message, systemPrompt)
-            const response = await this.chatClient.chat(question, this.systemPrompt);
-            return response;
+            return await this.chatClient.chat(question, this.systemPrompt);
         } catch (error) {
+            if (await this.handleCreditError(error)) return "积分不足，请充值。";
             console.error('Error asking AI:', error);
             return "连接断开，请重试。";
         }
@@ -102,23 +106,7 @@ class AIClient {
 
     async judgeProgress(question, milestones) {
         if (!this.chatClient || !milestones || milestones.length === 0) return [];
-
-        const prompt = `
-        你需要判断玩家的提问是否“触及”了以下关键剧情点（Milestones）。
-        
-        【关键剧情点】
-        ${JSON.stringify(milestones)}
-
-        【玩家提问】
-        "${question}"
-
-        【判断规则】
-        1. 如果玩家的问题核心意思与某个剧情点相符（哪怕只是部分猜中），就认为触及了该点。
-        2. 请返回一个 JSON 数组，包含所有触及的 milestones id。如果没有触及，返回空数组 []。
-        3. 只返回 JSON 数组，不要任何多余文字。
-        4. 示例返回：["m1", "m3"]
-        `;
-
+        const prompt = `判断玩家提问是否触及剧情点: ${JSON.stringify(milestones)}. 玩家: "${question}". 返回JSON数组ID.`;
         try {
             const response = await this.chatClient.chat(prompt);
             const jsonStr = response.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -131,112 +119,29 @@ class AIClient {
     }
 
     async generateStory(genre, soupType) {
-        if (!this.isReady) {
-            await this.init();
-        }
-
-        // Prepare Examples
-        let examplesText = "";
-        if (window.STORIES && window.STORIES.length > 0) {
-            // Pick up to 2 random examples
-            const examples = window.STORIES.sort(() => 0.5 - Math.random()).slice(0, 2);
-            examplesText = `
-        【参考范例（风格参考）】
-        ${examples.map((s, i) => `
-        范例 ${i + 1} (${s.genre} / ${s.soup_type}):
-        - 汤面: ${s.puzzle}
-        - 汤底: ${s.truth}
-        `).join('\n')}
-            `;
-        }
-
-        const prompt = `
-        你是一个资深的海龟汤（Lateral Thinking Puzzle）出题人。请根据以下要求创作一个新的谜题。
-        ${examplesText}
-
-        【核心要求】
-        1. **故事类型**：${genre}
-           - 本格：逻辑必须严密，符合现实物理法则，无鬼怪。
-           - 变格：必须包含超自然元素（鬼怪、魔法、科幻），但逻辑自洽。
-           - 新本格：谜面看似超自然（密室、消失），由于人为诡计或特殊心理/梦境造成，本质符合现实。
-        
-        2. **恐怖程度（汤底风格）**：${soupType}
-           - 清汤：**无尸体、无血腥**。温和有趣，通常是误会、巧合或生活冷知识。重点在于思维盲区。
-           - 红汤：**惊悚、刺激**。包含尸体、谋杀或血腥描写。氛围紧张，需要一定胆量。
-           - 黑汤：**极为致郁、黑暗**。涉及人性之恶、伦理崩坏、复杂的犯罪心理。令人细思极恐，后劲大。
-           - 王八汤（搞笑汤）：**逻辑崩坏、无厘头**。这是一个搞笑分类！不涉及真正的乌龟。利用谐音梗、双关语、常识反转或弱智吧风格。目的是让人会心一笑或大呼“离谱”。
-
-        【输出格式】
-        请直接返回一个标准的 JSON 对象（不要Markdown格式），包含以下字段：
-        {
-            "id": "gen_${Date.now()}",
-            "title": "简短有吸引力的标题",
-            "puzzle": "汤面（这是给玩家看的谜题。要求：设置强烈的悬念或矛盾，让人忍不住想问为什么。不要把真相写进去！）",
-            "truth": "汤底（这是完整的真相。包含：起因、经过、核心诡计、结果。逻辑必须闭环，解释汤面中的所有疑点。）",
-            "hint": "给主持人的关键词提示（3-5个关键线索）",
-            "solutionSpec": {
-                "milestones": [
-                    { "id": "m1", "text": "关键事实1" },
-                    { "id": "m2", "text": "关键事实2" },
-                    { "id": "m3", "text": "关键事实3 (共3-5个)" }
-                ],
-                "hints": [
-                     { "id": "h1", "unlockAfter": 1, "text": "💡 提示1：..." },
-                     { "id": "h2", "unlockAfter": 2, "text": "💡 提示2：..." }
-                ]
-            }
-        }
-        `;
-
+        if (!this.isReady) await this.init();
+        const prompt = `创作一个海龟汤故事。类型: ${genre}, 恐怖度: ${soupType}. 返回指定格式JSON.`;
         try {
-            // Temporary ChatClient for generation
-            const genClient = this.sdk.createChatClient('claude-opus-4.5');
+            const genClient = this.sdk.createChatClient('gpt-4o-mini');
             const response = await genClient.chat(prompt);
-
-            // Clean response in case of markdown blocks
             let jsonStr = response.replace(/```json/g, '').replace(/```/g, '').trim();
-            const story = JSON.parse(jsonStr);
-            return story;
+            return JSON.parse(jsonStr);
         } catch (error) {
+            await this.handleCreditError(error);
             console.error("Story generation failed:", error);
             return null;
         }
     }
 
     async generateSceneImage(story) {
-        if (!this.isReady) {
-            await this.init();
-        }
-
-        // 强化提示词工程，确保生成的图片更具恐怖感、清晰度和代入感
-        const prompt = `
-        Create a cinematic, high-definition, and extremely atmospheric background image for a "Sea Turtle Soup" mystery game.
-        
-        【Visual Style】: Horror aesthetic, eerie and unsettling atmosphere, photorealistic masterpiece, 8k resolution, ultra-detailed textures, sharp focus, dramatic chiaroscuro lighting, deep menacing shadows, macabre details, uncanny valley vibes.
-        
-        【Scene Description】: Based on this story: "${story.puzzle}". 
-        Focus on a symbolic or environment-based representation that evokes a sense of dread.
-        - If it mentions a restaurant, show a dimly lit, abandoned table with flickering lights and a cold, lonely atmosphere.
-        - If it mentions a cliff or ocean, show a majestic but terrifyingly tumultuous sea under a blood-red moon or stormy sky.
-        - If it's a "Black Soup" (Human nature/Dark), use cold, desaturated, and morbid tones with subtle hints of psychological horror.
-        - If it's a "Red Soup" (Horror), use intense red accents, realistic blood-like textures, and ominous, shifting shadows.
-        
-        【CRITICAL CONSTRAINTS】:
-        - NO TEXT, NO TITLES, NO WORDS, NO LETTERS, NO NUMBERS.
-        - The image should be suitable as a high-quality full-screen application background.
-        - Horizontal composition, cinematic 16:9 aspect ratio.
-        - High clarity, zero blur in focal points.
-        `;
-
+        if (!this.isReady) await this.init();
+        const prompt = `Create horror HD background for: "${story.puzzle}". 8k resolution, cinematic, NO TEXT.`;
         try {
-            // Use createImageClient
             const imageClient = this.sdk.createImageClient('flux-1-schnell');
-            // Request a high-quality generation
             const image = await imageClient.generate(prompt, '1024x1024');
-
-            // 返回 Data URL 用于背景图
             return image.toDataURL();
         } catch (error) {
+            await this.handleCreditError(error);
             console.error("Image generation failed:", error);
             return null;
         }

@@ -33,13 +33,33 @@ const soupOptions = document.getElementById('soup-options');
 let selectedGenre = '全部';
 let selectedSoup = '全部';
 
+// Balance Elements
+const balanceContainer = document.getElementById('balance-container');
+const balanceText = document.getElementById('balance-text');
+const rechargeBtn = document.getElementById('recharge-btn');
+
 // Initialize App
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initStoryList();
     initFilterLogic();
 
     // Initialize AI Client
-    window.aiClient.init();
+    const ready = await window.aiClient.init();
+    if (ready) {
+        updateBalanceDisplay();
+    }
+});
+
+async function updateBalanceDisplay() {
+    if (balanceContainer && balanceText) {
+        const info = await window.aiClient.getPlayerInfo();
+        balanceText.textContent = `积分: ${info.credits || 0}`;
+        balanceContainer.classList.remove('hidden');
+    }
+}
+
+if (rechargeBtn) rechargeBtn.addEventListener('click', () => {
+    window.aiClient.openRechargePage();
 });
 
 // Navigation Functions
@@ -136,6 +156,7 @@ function startGame(story) {
             `;
             gamePlayArea.style.backgroundSize = 'cover';
             gamePlayArea.style.backgroundPosition = 'center';
+            updateBalanceDisplay(); // Refresh balance after image generation
         }
     });
 
@@ -194,6 +215,7 @@ async function handleUserSubmit() {
     userInput.disabled = false;
     appendMessage('ai', response);
     userInput.focus();
+    updateBalanceDisplay(); // Refresh balance after chat response
 
     // Check Win
     if (window.gameLogic.checkWinCondition(response)) {
@@ -316,7 +338,9 @@ if (generateBtn) generateBtn.addEventListener('click', async () => {
 
     if (story && story.puzzle) {
         startGame(story);
+        updateBalanceDisplay(); // Refresh balance after generation
     } else {
         alert('生成失败，AI 开小差了，请重试！');
+        updateBalanceDisplay(); // Refresh in case of credit error
     }
 });
