@@ -438,6 +438,35 @@ input[type="text"] {
     color: var(--text-secondary);
     font-style: italic;
     font-size: 0.9rem;
-    padding: 10px;
     animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Prediction Chips */
+.prediction-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 0 20px 15px 20px;
+    justify-content: center;
+}
+
+.prediction-chip {
+    background-color: rgba(187, 134, 252, 0.1);
+    border: 1px solid rgba(187, 134, 252, 0.3);
+    color: var(--text-primary);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.prediction-chip:hover {
+    background-color: rgba(187, 134, 252, 0.2);
+    border-color: var(--accent-color);
+    transform: translateY(-2px);
 }

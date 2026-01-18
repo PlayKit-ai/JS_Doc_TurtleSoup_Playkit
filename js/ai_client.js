@@ -79,7 +79,7 @@ class AIClient {
                 model: 'gemini-2.5-flash', // Updated to Gemini 2.5 Flash
                 systemPrompt: this.systemPrompt,
                 generateReplyPrediction: true,
-                predictionCount: 1
+                predictionCount: 3
             });
 
             this.npc.on('replyPredictions', (predictions) => {
@@ -187,19 +187,22 @@ class AIClient {
         const prompt = `
         Create a high-quality, cinematic, horizontal wide-shot image for a horror mystery game background.
         
-        【Core Subject】: A complete, immersive environmental scene based on: "${story.puzzle}. ${story.truth}".
+        **CRITICAL INSTRUCTION**: Read the story context below and identify the **PRIMARY PHYSICAL LOCATION** (e.g., Art Studio, Bathroom, Forest, Kitchen). The image MUST depict this specific location accurately. Do not default to a street or exterior unless explicitly stated.
+        
+        【Story Context】: "${story.puzzle}"
+        【True Setting Details】: "${story.truth}"
         
         【Visual Quality】: Extremely clear, 8k resolution, masterpiece, sharp focus, diverse details, photorealistic.
         
         【Atmosphere】: Dark, eerie, suspenseful, psychological horror, dramatic lighting, deep shadows, volumetric fog.
         
         【Composition Rules】: 
-        1. Wide angle view. Ensure objects are fully visible (e.g., if a building/sign is shown, show the whole thing, do not cut it off).
-        2. Centered composition for key elements to avoid bad cropping.
+        1. Wide angle view of the *environment*.
+        2. Focus on the ROOM or LOCATION described (e.g., if "studio", show easels, paintings, messy tools).
         3. NO cropped text or partial signs. NO headless figures or distorted bodies. 
         4. Focus on the *scene* and *atmosphere* rather than close-ups of people. If people are present, they should be silhouettes or in the distance to maintain mystery.
         
-        【Negative Constraints】: ugly, blurry, low quality, distorted, bad anatomy, headless, cut off objects, text, watermarks.
+        【Negative Constraints】: ugly, blurry, low quality, distorted, bad anatomy, headless, cut off objects, text, watermarks, bright cheerful colors.
         `;
 
         try {

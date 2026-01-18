@@ -36,6 +36,7 @@ const rechargeBtn = document.getElementById('recharge-btn');
 
 // Ghost Text State
 const ghostTextElement = document.getElementById('ghost-text');
+const predictionContainer = document.getElementById('prediction-container');
 let currentPrediction = '';
 
 let selectedGenre = '全部';
@@ -52,10 +53,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateBalanceDisplay();
 
         // Listen for AI predictions
+        // Listen for AI predictions
         window.aiClient.onPredictionsReceived = (predictions) => {
             if (predictions && predictions.length > 0) {
+                // prediction[0] for ghost text (optional, sticking to chips for now)
                 currentPrediction = predictions[0];
                 updateGhostText();
+
+                // Render chips
+                renderPredictions(predictions);
             }
         };
     }
@@ -71,6 +77,27 @@ function updateGhostText() {
     } else {
         ghostTextElement.textContent = '';
     }
+}
+
+function renderPredictions(predictions) {
+    if (!predictionContainer) return;
+    predictionContainer.innerHTML = '';
+    predictionContainer.classList.remove('hidden');
+
+    predictions.forEach(text => {
+        const chip = document.createElement('div');
+        chip.className = 'prediction-chip';
+        chip.textContent = text;
+        chip.onclick = () => {
+            if (userInput) {
+                userInput.value = text;
+                // Update ghost text immediately or clear it?
+                // Submit immediately
+                handleUserSubmit();
+            }
+        };
+        predictionContainer.appendChild(chip);
+    });
 }
 
 async function updateBalanceDisplay() {
@@ -155,6 +182,10 @@ function startGame(story) {
         userInput.disabled = false;
         userInput.placeholder = "输入你的问题...";
         userInput.value = '';
+        if (predictionContainer) {
+            predictionContainer.innerHTML = '';
+            predictionContainer.classList.add('hidden');
+        }
     }
     if (sendBtn) sendBtn.disabled = false;
     chatHistory.innerHTML = `
@@ -237,6 +268,10 @@ async function handleUserSubmit() {
     // UI
     userInput.value = '';
     if (ghostTextElement) ghostTextElement.textContent = '';
+    if (predictionContainer) {
+        predictionContainer.innerHTML = '';
+        predictionContainer.classList.add('hidden');
+    }
     currentPrediction = '';
 
     appendMessage('user', text);
