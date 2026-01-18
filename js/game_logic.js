@@ -50,9 +50,11 @@ class GameLogic {
         // Only run judge if AI answered "Yes" or similar positive
         // We assume "Irrelevant" or "No" means the player is off-track.
         // But "Yes and No" (是也不是) implies a partial hit, so we SHOULD checks milestones.
-        if (answer.includes('无关') || (answer.includes('不是') && !answer.includes('是'))) {
-            // If "No" AND NOT "Yes" (pure "No"), or "Irrelevant", skip.
-            // This allows "是" and "是也不是".
+        const isYesAndNo = answer.includes('是也不是');
+        const isNo = answer.includes('不是') && !isYesAndNo; // "不是" but excluding "是也不是"
+        const isIrrelevant = answer.includes('无关');
+
+        if (isIrrelevant || isNo) {
             return;
         }
 
@@ -60,7 +62,7 @@ class GameLogic {
 
         // 1. Check Milestones using AI
         try {
-            const foundIds = await window.aiClient.judgeProgress(question, spec.milestones);
+            const foundIds = await window.aiClient.judgeProgress(question, answer, spec.milestones);
             console.log("AI Judge Result:", foundIds);
 
             foundIds.forEach(id => {

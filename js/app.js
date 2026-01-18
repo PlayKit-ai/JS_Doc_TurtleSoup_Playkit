@@ -29,14 +29,17 @@ const genLoading = document.getElementById('gen-loading');
 const genreOptions = document.getElementById('genre-options');
 const soupOptions = document.getElementById('soup-options');
 
-// State for generation - default to "Full" or specific keyword
-let selectedGenre = '全部';
-let selectedSoup = '全部';
-
 // Balance Elements
 const balanceContainer = document.getElementById('balance-container');
 const balanceText = document.getElementById('balance-text');
 const rechargeBtn = document.getElementById('recharge-btn');
+
+// Ghost Text State
+const ghostTextElement = document.getElementById('ghost-text');
+let currentPrediction = '';
+
+let selectedGenre = '全部';
+let selectedSoup = '全部';
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', async () => {
@@ -47,8 +50,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ready = await window.aiClient.init();
     if (ready) {
         updateBalanceDisplay();
+
+        // Listen for AI predictions
+        window.aiClient.onPredictionsReceived = (predictions) => {
+            if (predictions && predictions.length > 0) {
+                currentPrediction = predictions[0];
+                updateGhostText();
+            }
+        };
     }
 });
+
+function updateGhostText() {
+    if (!ghostTextElement || !userInput) return;
+    const inputVal = userInput.value;
+
+    // Only show ghost text if input matches the start of the prediction
+    if (inputVal && currentPrediction.startsWith(inputVal)) {
+        ghostTextElement.textContent = currentPrediction;
+    } else {
+        ghostTextElement.textContent = '';
+    }
+}
 
 async function updateBalanceDisplay() {
     if (balanceContainer && balanceText) {
@@ -74,7 +97,7 @@ function showPanel(panel) {
     if (panel) panel.classList.remove('hidden');
 
     // Header Logic: Show only on Home
-    if (mainHeader) { // Ensure mainHeader exists before manipulating
+    if (mainHeader) {
         if (panel === homePanel) {
             mainHeader.classList.remove('hidden');
             document.body.classList.remove('layout-top');
@@ -92,17 +115,13 @@ if (backFromClassic) backFromClassic.addEventListener('click', () => showPanel(h
 if (backFromCustom) backFromCustom.addEventListener('click', () => showPanel(homePanel));
 
 function initFilterLogic() {
-    // Helper to handle selection
     const setupSelection = (container, callback) => {
-        if (!container) return; // Guard against missing elements
+        if (!container) return;
         const buttons = container.querySelectorAll('.filter-btn');
         buttons.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Remove active from all siblings
                 buttons.forEach(b => b.classList.remove('active'));
-                // Add active to clicked
                 btn.classList.add('active');
-                // Update state
                 callback(btn.dataset.value);
             });
         });
@@ -128,42 +147,40 @@ function initStoryList() {
 function startGame(story) {
     showPanel(gamePanel);
 
-    // UI Update
     storyTitle.textContent = story.title;
     storyPuzzle.textContent = story.puzzle;
+
+    // Reset Input State
+    if (userInput) {
+        userInput.disabled = false;
+        userInput.placeholder = "输入你的问题...";
+        userInput.value = '';
+    }
+    if (sendBtn) sendBtn.disabled = false;
     chatHistory.innerHTML = `
         <div class="message system">
             <p>我是你的AI主持人。请提问，我只能回答“是”、“不是”、“是也不是”或“与此无关”。</p>
         </div>
     `;
 
-    // Trigger Background Generation
     const gamePlayArea = document.getElementById('game-play-area');
-    if (!gamePlayArea) {
-        console.error("Game play area not found!");
-        return;
+    if (gamePlayArea) {
+        gamePlayArea.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6))';
+        window.aiClient.generateSceneImage(story).then(imageUrl => {
+            if (imageUrl) {
+                gamePlayArea.style.backgroundImage = `
+                    linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
+                    url('${imageUrl}')
+                `;
+                gamePlayArea.style.backgroundSize = 'cover';
+                gamePlayArea.style.backgroundPosition = 'center';
+                updateBalanceDisplay();
+            }
+        });
     }
-    // Set a temporary loading state or keep previous until loaded
-    gamePlayArea.style.backgroundImage = 'linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6))';
 
-    // Async load image
-    window.aiClient.generateSceneImage(story).then(imageUrl => {
-        if (imageUrl) {
-            // Apply with overlay to ensure text readability
-            gamePlayArea.style.backgroundImage = `
-                linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.6)),
-                url('${imageUrl}')
-            `;
-            gamePlayArea.style.backgroundSize = 'cover';
-            gamePlayArea.style.backgroundPosition = 'center';
-            updateBalanceDisplay(); // Refresh balance after image generation
-        }
-    });
-
-    // Logic Update
     window.gameLogic.start(story);
 
-    // Clear Hints Panel
     const hintPanel = document.getElementById('hint-panel');
     const hintList = document.getElementById('hint-list');
     const progressFill = document.getElementById('progress-fill');
@@ -177,7 +194,6 @@ function startGame(story) {
     }
     if (progressText) {
         progressText.textContent = '0%';
-        progressText.style.color = '';
     }
 }
 
@@ -189,6 +205,27 @@ function appendMessage(role, text) {
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
+// Event Listeners
+if (userInput) {
+    userInput.addEventListener('input', updateGhostText);
+
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab' || e.key === 'ArrowRight') {
+            if (ghostText && ghostText.textContent) {
+                e.preventDefault();
+                userInput.value = ghostText.textContent;
+                ghostText.textContent = '';
+                currentPrediction = '';
+            }
+        }
+    });
+
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleUserSubmit();
+    });
+}
+if (sendBtn) sendBtn.addEventListener('click', handleUserSubmit);
+
 async function handleUserSubmit() {
     const text = userInput.value.trim();
     if (!text) return;
@@ -199,6 +236,9 @@ async function handleUserSubmit() {
 
     // UI
     userInput.value = '';
+    if (ghostTextElement) ghostTextElement.textContent = '';
+    currentPrediction = '';
+
     appendMessage('user', text);
     statusIndicator.classList.remove('hidden');
     userInput.disabled = true;
@@ -222,6 +262,13 @@ async function handleUserSubmit() {
         document.body.classList.add('solved');
         appendMessage('system', '🎉 游戏胜利！你已经还原了真相。');
         renderHints(); // Re-render to show 100% progress
+
+        // Disable input
+        if (userInput) {
+            userInput.disabled = true;
+            userInput.placeholder = "游戏胜利";
+        }
+        if (sendBtn) sendBtn.disabled = true;
     }
 }
 
@@ -320,6 +367,13 @@ if (giveUpBtn) giveUpBtn.addEventListener('click', () => {
         appendMessage('system', `【真相揭秘】\n${truth}`);
         document.body.classList.add('solved');
         window.gameLogic.isSolved = true;
+
+        // Disable input
+        if (userInput) {
+            userInput.disabled = true;
+            userInput.placeholder = "游戏结束";
+        }
+        if (sendBtn) sendBtn.disabled = true;
     }
 });
 

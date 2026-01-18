@@ -121,11 +121,14 @@
                             </div>
                         </div>
 
+                        <div id="status-indicator" class="status hidden">正在思考...</div>
                         <div class="input-area">
-                            <input type="text" id="user-input" placeholder="输入你的问题..." autocomplete="off">
+                            <div class="input-wrapper">
+                                <div id="ghost-text" class="ghost-text"></div>
+                                <input type="text" id="user-input" placeholder="输入你的问题..." autocomplete="off">
+                            </div>
                             <button id="send-btn">提问</button>
                         </div>
-                        <div id="status-indicator" class="status hidden">正在思考...</div>
                     </div>
                 </div>
 
